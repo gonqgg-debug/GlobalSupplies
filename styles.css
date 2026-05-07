@@ -20,6 +20,7 @@
   --whatsapp: #25D366;
   --font-title: 'Barlow Condensed', sans-serif;
   --font-body: 'Inter', sans-serif;
+  --navbar-height: 80px;
 }
 
 html { scroll-behavior: smooth; }
@@ -111,7 +112,7 @@ ul { list-style: none; }
   width: 100%;
   z-index: 100;
   background: var(--blanco);
-  height: 72px;
+  height: var(--navbar-height);
   transition: box-shadow 0.3s;
 }
 .navbar.scrolled { box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
@@ -121,20 +122,31 @@ ul { list-style: none; }
   align-items: center;
   justify-content: space-between;
   height: 100%;
+  gap: clamp(16px, 3vw, 36px);
+  padding: 0 clamp(20px, 5vw, 56px);
+  max-width: 1320px;
 }
 
 .logo {
-  font-family: var(--font-title);
-  font-weight: 700;
-  font-size: 28px;
-  color: var(--azul-profundo);
-  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
+  flex-shrink: 0;
+  max-width: min(168px, 42vw);
+}
+.logo img {
+  display: block;
+  height: 34px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: left center;
 }
 
 .nav-links {
   display: none;
   align-items: center;
-  gap: 32px;
+  gap: clamp(18px, 2.4vw, 32px);
 }
 
 .nav-links a {
@@ -160,12 +172,21 @@ ul { list-style: none; }
 
 .nav-cta {
   display: none;
-  padding: 10px 20px;
+  align-self: center;
+  flex-shrink: 0;
+  flex-grow: 0;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  padding: 5px 14px;
   background: var(--naranja);
   color: var(--blanco);
   border-radius: 4px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
+  white-space: nowrap;
+  line-height: 1.2;
+  height: auto;
+  box-sizing: border-box;
 }
 .nav-cta:hover { background: var(--naranja-hover); }
 
@@ -177,6 +198,7 @@ ul { list-style: none; }
   cursor: pointer;
   padding: 8px;
   z-index: 101;
+  flex-shrink: 0;
 }
 .hamburger span {
   display: block;
@@ -192,7 +214,7 @@ ul { list-style: none; }
 /* Mobile Menu */
 .mobile-menu {
   position: fixed;
-  top: 72px;
+  top: var(--navbar-height);
   left: 0;
   width: 100%;
   background: var(--blanco);
@@ -225,8 +247,19 @@ ul { list-style: none; }
 }
 
 @media (min-width: 768px) {
-  .nav-links { display: flex; }
-  .nav-cta { display: inline-block; }
+  .nav-links {
+    display: flex;
+    flex: 1;
+    justify-content: center;
+    gap: clamp(20px, 2.8vw, 40px);
+    min-width: 0;
+    margin: 0 clamp(16px, 2vw, 28px);
+  }
+  .nav-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
   .hamburger { display: none; }
   .mobile-menu { display: none; }
 }
@@ -264,11 +297,19 @@ ul { list-style: none; }
 .footer-col a:hover { opacity: 1; }
 
 .footer-logo {
-  font-family: var(--font-title);
-  font-weight: 700;
-  font-size: 28px;
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
   margin-bottom: 12px;
-  display: inline-block;
+  max-width: min(148px, 45vw);
+}
+.footer-logo img {
+  display: block;
+  height: 32px;
+  width: auto;
+  max-width: min(148px, 45vw);
+  object-fit: contain;
+  object-position: left center;
 }
 
 .footer-social {
@@ -659,7 +700,7 @@ ul { list-style: none; }
    BANNER SECTIONS
    ============================================= */
 .banner-section {
-  padding: 64px 5%;
+  padding: 64px 5% 96px;
   text-align: center;
 }
 .banner-section h2 {
@@ -682,43 +723,12 @@ ul { list-style: none; }
   flex-wrap: wrap;
   gap: 16px;
   margin-top: 32px;
+  margin-bottom: 8px;
   justify-content: center;
 }
-
-/* =============================================
-   TESTIMONIALS
-   ============================================= */
-.testimonial-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 24px;
-}
-@media (min-width: 768px) {
-  .testimonial-grid { grid-template-columns: repeat(3, 1fr); }
-}
-
-.testimonial-card {
-  background: var(--blanco);
-  border-radius: 8px;
-  padding: 32px;
-  border: 1px solid var(--borde);
-}
-.testimonial-card .quote-icon { color: var(--naranja); opacity: 0.5; }
-.testimonial-card .quote {
-  font-size: 15px;
-  line-height: 1.7;
-  font-style: italic;
-  margin-top: 12px;
-}
-.testimonial-card .author {
-  font-weight: 600;
-  font-size: 15px;
-  margin-top: 20px;
-}
-.testimonial-card .company,
-.testimonial-card .city {
-  font-size: 13px;
-  color: var(--gris-medio);
+.banner-section .container > .btn {
+  display: inline-block;
+  margin-top: 28px;
 }
 
 /* =============================================
@@ -726,7 +736,7 @@ ul { list-style: none; }
    ============================================= */
 .cat-tabs {
   position: sticky;
-  top: 72px;
+  top: var(--navbar-height);
   z-index: 50;
   background: var(--blanco);
   border-bottom: 1px solid var(--borde);
@@ -736,10 +746,10 @@ ul { list-style: none; }
 .cat-tabs .container {
   display: flex;
   gap: 0;
-  padding: 0;
+  padding: 0 clamp(12px, 4vw, 36px);
 }
 .cat-tabs a {
-  padding: 16px 20px;
+  padding: 16px clamp(14px, 2.4vw, 24px);
   font-size: 14px;
   font-weight: 500;
   color: var(--texto);
@@ -812,15 +822,6 @@ ul { list-style: none; }
   font-weight: 600;
   font-size: 20px;
 }
-.product-card .origin {
-  display: inline-block;
-  font-size: 12px;
-  padding: 4px 12px;
-  border-radius: 20px;
-  background: var(--azul-profundo);
-  color: var(--blanco);
-  margin-top: 8px;
-}
 .product-card .description {
   font-size: 14px;
   color: var(--gris-medio);
@@ -880,39 +881,6 @@ ul { list-style: none; }
   line-height: 1.5;
 }
 .catalog-card .btn { margin-top: 24px; }
-
-/* =============================================
-   STATS / NUMBERS
-   ============================================= */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-@media (min-width: 1200px) {
-  .stats-grid { grid-template-columns: repeat(4, 1fr); }
-}
-
-.stat-card {
-  background: var(--blanco);
-  border-radius: 8px;
-  padding: 32px;
-  text-align: center;
-  border-top: 4px solid var(--naranja);
-}
-.stat-card .number {
-  font-family: var(--font-title);
-  font-weight: 700;
-  font-size: 36px;
-  color: var(--naranja);
-}
-.stat-card .label {
-  font-size: 14px;
-  color: var(--gris-medio);
-  margin-top: 8px;
-}
 
 /* =============================================
    COMPARISON TABLE
@@ -1178,5 +1146,5 @@ ul { list-style: none; }
 @media (max-width: 767px) {
   .section { padding: 60px 5%; }
   .product-section { padding: 48px 5%; }
-  .banner-section { padding: 48px 5%; }
+  .banner-section { padding: 48px 5% 80px; }
 }
