@@ -177,14 +177,14 @@ ul { list-style: none; }
   flex-grow: 0;
   width: max-content;
   max-width: calc(100vw - 32px);
-  padding: 5px 14px;
+  padding: 12px 22px;
   background: var(--naranja);
   color: var(--blanco);
-  border-radius: 4px;
-  font-size: 13px;
+  border-radius: 6px;
+  font-size: 14px;
   font-weight: 500;
   white-space: nowrap;
-  line-height: 1.2;
+  line-height: 1.25;
   height: auto;
   box-sizing: border-box;
 }
