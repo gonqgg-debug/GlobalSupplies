@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Strategy Hub — Global Supplies MJC</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="stylesheet" href="warroom.css">
+</head>
+<body>
+
+  <!-- Password Gate -->
+  <div class="password-gate" id="passwordGate">
+    <div class="password-card">
+      <h1>Strategy Hub</h1>
+      <p>Acceso restringido — solo equipo GSMJC</p>
+      <form id="passwordForm">
+        <input type="password" id="passwordInput" placeholder="Contraseña" autocomplete="current-password" required>
+        <div class="password-error" id="passwordError"></div>
+        <button type="submit" class="btn btn-primary">Entrar</button>
+      </form>
+      <p class="password-note">
+        Protección básica del lado del cliente. No sustituye autenticación real en servidor.
+      </p>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div class="warroom-app" id="warroomApp">
+
+    <!-- Top Bar -->
+    <header class="warroom-topbar">
+      <div class="warroom-title">Strategy Hub</div>
+
+      <div class="warroom-search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+        </svg>
+        <input type="search" id="searchInput" placeholder="Buscar proyecto o desarrollador...">
+      </div>
+
+      <div class="warroom-filters">
+        <select id="filterCrm">
+          <option value="">Todos los estados</option>
+          <option value="Sin contactar">Sin contactar</option>
+          <option value="Contactado">Contactado</option>
+          <option value="Visitado">Visitado</option>
+          <option value="En negociación">En negociación</option>
+          <option value="Cliente">Cliente</option>
+          <option value="Descartado">Descartado</option>
+        </select>
+        <select id="filterStage">
+          <option value="">Todas las etapas</option>
+          <option value="Anunciado/Preventa">Anunciado/Preventa</option>
+          <option value="Excavación/Cimentación">Excavación/Cimentación</option>
+          <option value="Estructura">Estructura</option>
+          <option value="Terminación">Terminación</option>
+          <option value="Terminado">Terminado</option>
+          <option value="Detenido">Detenido</option>
+        </select>
+        <select id="filterType">
+          <option value="">Todos los tipos</option>
+          <option value="Residencial">Residencial</option>
+          <option value="Condominio">Condominio</option>
+          <option value="Hotel">Hotel</option>
+          <option value="Comercial">Comercial</option>
+          <option value="Uso mixto">Uso mixto</option>
+        </select>
+        <select id="filterPriority">
+          <option value="">Todas las prioridades</option>
+          <option value="Alta">Alta</option>
+          <option value="Media">Media</option>
+          <option value="Baja">Baja</option>
+        </select>
+      </div>
+
+      <div class="warroom-actions">
+        <button class="btn btn-add" id="btnAddSite" title="Agregar sitio">
+          <span>+</span> <span class="btn-label">Agregar</span>
+        </button>
+        <button class="btn" id="btnExport" title="Exportar backup">
+          <span class="btn-label">Exportar</span>
+        </button>
+        <button class="btn" id="btnImport" title="Importar backup">
+          <span class="btn-label">Importar</span>
+        </button>
+        <input type="file" id="importFile" accept=".json,application/json" hidden>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="warroom-main">
+      <div class="warroom-map-row">
+        <div class="map-wrap">
+          <div id="map"></div>
+
+          <div class="layer-toggle">
+            <button class="btn btn-sm" id="btnToggleLayer">Vista satélite</button>
+          </div>
+
+          <div class="add-mode-banner" id="addModeBanner">
+            Haz clic en el mapa para colocar el pin del nuevo sitio
+          </div>
+
+          <div class="map-legend">
+            <h4>Estado CRM</h4>
+            <div class="legend-item"><span class="legend-dot" style="background:#6B7280"></span> Sin contactar</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#3B82F6"></span> Contactado</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#F59E0B"></span> Visitado</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#8B5CF6"></span> En negociación</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#15803D"></span> Cliente</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#EF4444"></span> Descartado</div>
+          </div>
+        </div>
+
+        <aside class="warroom-sidebar">
+          <!-- List view -->
+          <div class="sidebar-view" id="sidebarListView">
+            <div class="sidebar-header">
+              Sitios activos
+              <span class="site-count" id="siteCount">0</span>
+            </div>
+            <div class="site-list" id="siteList">
+              <div class="empty-list">
+                <p>No hay sitios registrados</p>
+                <button class="btn btn-secondary btn-sm" id="btnAddEmpty">+ Agregar primer sitio</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Detail view (replaces list when a site is selected) -->
+          <div class="sidebar-view detail-view" id="detailPanel">
+            <div class="sidebar-header detail-header-bar">
+              <button class="btn-back" id="detailBack" type="button">← Volver a la lista</button>
+            </div>
+            <div class="detail-inner" id="detailContent"></div>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <!-- Site Form Modal -->
+  <div class="modal-overlay" id="siteModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modalTitle">Nuevo sitio</h2>
+        <button class="modal-close" id="modalClose" aria-label="Cerrar">&times;</button>
+      </div>
+      <form id="siteForm">
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label for="siteName">Nombre del proyecto *</label>
+              <input type="text" id="siteName" required placeholder="Ej. Cap Cana Residences Tower 3">
+            </div>
+
+            <div class="form-group full-width">
+              <label for="siteCrm">Estado comercial (CRM) *</label>
+              <select id="siteCrm" required>
+                <option value="Sin contactar">Sin contactar</option>
+                <option value="Contactado">Contactado</option>
+                <option value="Visitado">Visitado</option>
+                <option value="En negociación">En negociación</option>
+                <option value="Cliente">Cliente</option>
+                <option value="Descartado">Descartado</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="siteStage">Etapa de construcción *</label>
+              <select id="siteStage" required>
+                <option value="Anunciado/Preventa">Anunciado/Preventa</option>
+                <option value="Excavación/Cimentación">Excavación/Cimentación</option>
+                <option value="Estructura">Estructura</option>
+                <option value="Terminación">Terminación</option>
+                <option value="Terminado">Terminado</option>
+                <option value="Detenido">Detenido</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="siteType">Tipo de proyecto *</label>
+              <select id="siteType" required>
+                <option value="Residencial">Residencial</option>
+                <option value="Condominio">Condominio</option>
+                <option value="Hotel">Hotel</option>
+                <option value="Comercial">Comercial</option>
+                <option value="Uso mixto">Uso mixto</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="sitePriority">Prioridad</label>
+              <select id="sitePriority">
+                <option value="Alta">Alta</option>
+                <option value="Media" selected>Media</option>
+                <option value="Baja">Baja</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="siteUnits">Unidades / escala</label>
+              <input type="text" id="siteUnits" placeholder="Ej. 120 apartamentos">
+            </div>
+
+            <div class="form-group full-width coords-display" id="coordsDisplay">
+              Coordenadas: —
+            </div>
+
+            <div class="form-subsection">Desarrollador</div>
+
+            <div class="form-group">
+              <label for="devName">Nombre</label>
+              <input type="text" id="devName" placeholder="Nombre del desarrollador">
+            </div>
+
+            <div class="form-group">
+              <label for="devContact">Contacto</label>
+              <input type="text" id="devContact" placeholder="Teléfono o email">
+            </div>
+
+            <div class="form-group full-width">
+              <label for="devWebsite">Sitio web</label>
+              <input type="url" id="devWebsite" placeholder="https://">
+            </div>
+
+            <div class="form-subsection">Evaluación</div>
+
+            <div class="form-group full-width">
+              <label for="priceNotes">Notas de precio</label>
+              <textarea id="priceNotes" placeholder="Rango de precios, condiciones, etc."></textarea>
+            </div>
+
+            <div class="form-group full-width">
+              <label for="opportunityNotes">Notas de oportunidad</label>
+              <textarea id="opportunityNotes" placeholder="Potencial comercial, materiales necesarios, timing..."></textarea>
+            </div>
+
+            <div class="form-group full-width">
+              <label for="siteTags">Etiquetas (separadas por coma)</label>
+              <input type="text" id="siteTags" placeholder="Ej. cap-cana, lujo, fase-2">
+            </div>
+
+            <div class="form-subsection">Fotos</div>
+
+            <div class="form-group full-width">
+              <div class="photo-upload-zone" id="photoUploadZone">
+                <input type="file" id="photoInput" accept="image/*" multiple>
+                <p>Arrastra fotos aquí o haz clic para seleccionar</p>
+              </div>
+              <div class="upload-preview" id="uploadPreview"></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="modalCancel">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar sitio</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox">
+    <button class="lightbox-close" id="lightboxClose" aria-label="Cerrar">&times;</button>
+    <img id="lightboxImg" src="" alt="Foto del sitio">
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="warroom-db.js"></script>
+  <script src="warroom.js"></script>
+</body>
+</html>
