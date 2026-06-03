@@ -45,6 +45,8 @@
   let markers = {};
   let selectedSiteId = null;
   let addMode = false;
+  let repositionMode = false;
+  let repositionFromModal = false;
   let editingSiteId = null;
   let pendingCoords = null;
   let pendingPhotos = [];
@@ -171,6 +173,10 @@
       if (e.target.id === 'lightbox') closeLightbox();
     });
 
+    $('#btnRepositionMap').addEventListener('click', startRepositionFromModal);
+    $('#siteLat').addEventListener('input', readCoordInputsFromForm);
+    $('#siteLng').addEventListener('input', readCoordInputsFromForm);
+
     siteModal.addEventListener('click', (e) => {
       if (e.target === siteModal) closeModal();
     });
@@ -285,6 +291,23 @@
     });
   }
 
+  function bindMarkerDrag(marker, siteId) {
+    marker.off('dragend');
+    marker.on('dragend', async (e) => {
+      await updateSiteCoords(siteId, e.target.getLatLng());
+    });
+  }
+
+  function setMarkerDraggable(marker, draggable, siteId) {
+    if (draggable) {
+      marker.dragging.enable();
+      bindMarkerDrag(marker, siteId);
+    } else if (marker.dragging) {
+      marker.dragging.disable();
+      marker.off('dragend');
+    }
+  }
+
   function renderMarkers(filtered) {
     const filteredIds = new Set(filtered.map((s) => s.id));
 
@@ -302,13 +325,36 @@
       if (markers[site.id]) {
         markers[site.id].setIcon(icon);
         markers[site.id].setLatLng([site.lat, site.lng]);
+        setMarkerDraggable(markers[site.id], isSelected, site.id);
       } else {
-        const marker = L.marker([site.lat, site.lng], { icon })
+        const marker = L.marker([site.lat, site.lng], { icon, draggable: isSelected })
           .addTo(map)
           .on('click', () => selectSite(site.id));
+        if (isSelected) bindMarkerDrag(marker, site.id);
         markers[site.id] = marker;
       }
     });
+  }
+
+  async function updateSiteCoords(siteId, latlng) {
+    const site = sites.find((s) => s.id === siteId);
+    if (!site) return;
+
+    const updated = {
+      ...site,
+      lat: latlng.lat,
+      lng: latlng.lng
+    };
+
+    await WarRoomDB.saveSite(updated);
+    const idx = sites.findIndex((s) => s.id === siteId);
+    sites[idx] = updated;
+
+    if (selectedSiteId === siteId) {
+      await renderDetail(updated);
+    }
+    renderMarkers(getFilteredSites());
+    showToast('Ubicación actualizada');
   }
 
   function toggleMapLayer() {
@@ -327,13 +373,40 @@
   // --- Add Mode ---
 
   function toggleAddMode() {
+    if (repositionMode) stopRepositionMode();
     addMode = !addMode;
     $('#btnAddSite').classList.toggle('active', addMode);
     addModeBanner.classList.toggle('visible', addMode);
+    if (addMode) addModeBanner.textContent = 'Haz clic en el mapa para colocar el pin del nuevo sitio';
     map.getContainer().style.cursor = addMode ? 'crosshair' : '';
   }
 
+  function startRepositionFromModal() {
+    repositionMode = true;
+    repositionFromModal = true;
+    siteModal.classList.remove('open');
+    addModeBanner.textContent = 'Haz clic en el mapa para la nueva ubicación';
+    addModeBanner.classList.add('visible');
+    map.getContainer().style.cursor = 'crosshair';
+  }
+
+  function stopRepositionMode() {
+    repositionMode = false;
+    repositionFromModal = false;
+    addModeBanner.classList.remove('visible');
+    map.getContainer().style.cursor = '';
+  }
+
   function onMapClick(e) {
+    if (repositionMode) {
+      pendingCoords = { lat: e.latlng.lat, lng: e.latlng.lng };
+      syncCoordInputs();
+      const reopenModal = repositionFromModal;
+      stopRepositionMode();
+      if (reopenModal) siteModal.classList.add('open');
+      return;
+    }
+
     if (!addMode) return;
 
     pendingCoords = { lat: e.latlng.lat, lng: e.latlng.lng };
@@ -400,7 +473,7 @@
         <div class="detail-field"><strong>Contacto</strong>${escapeHtml(site.developer?.contact || '—')}</div>
         <div class="detail-field"><strong>Web</strong>${site.developer?.website ? `<a href="${escapeHtml(site.developer.website)}" target="_blank" rel="noopener">${escapeHtml(site.developer.website)}</a>` : '—'}</div>
         <div class="detail-field"><strong>Unidades</strong>${escapeHtml(site.units || '—')}</div>
-        <div class="detail-field"><strong>Coordenadas</strong>${site.lat.toFixed(5)}, ${site.lng.toFixed(5)}</div>
+        <div class="detail-field"><strong>Coordenadas</strong>${site.lat.toFixed(5)}, ${site.lng.toFixed(5)}<p class="coords-hint">Arrastra el pin en el mapa para moverlo</p></div>
         ${site.tags?.length ? `<div class="detail-field"><strong>Etiquetas</strong>${site.tags.map((t) => `<span class="badge" style="background:var(--gris-claro);margin-right:4px">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
       </div>
 
@@ -455,6 +528,7 @@
       $('#opportunityNotes').value = site.opportunityNotes || '';
       $('#siteTags').value = (site.tags || []).join(', ');
       pendingCoords = { lat: site.lat, lng: site.lng };
+      syncCoordInputs();
 
       const photos = await WarRoomDB.getPhotosBySite(siteId);
       existingPhotoIds = photos.map((p) => p.id);
@@ -465,15 +539,21 @@
       $('#modalTitle').textContent = 'Nuevo sitio';
       siteForm.reset();
       $('#sitePriority').value = 'Media';
-      if (coords) pendingCoords = coords;
+      if (coords) {
+        pendingCoords = coords;
+        syncCoordInputs();
+      } else {
+        pendingCoords = null;
+        syncCoordInputs();
+      }
     }
 
-    updateCoordsDisplay();
     siteModal.classList.add('open');
     $('#siteName').focus();
   }
 
   function closeModal() {
+    stopRepositionMode();
     siteModal.classList.remove('open');
     editingSiteId = null;
     pendingCoords = null;
@@ -483,20 +563,31 @@
     siteForm.reset();
   }
 
-  function updateCoordsDisplay() {
-    const el = $('#coordsDisplay');
-    if (pendingCoords) {
-      el.textContent = `Coordenadas: ${pendingCoords.lat.toFixed(5)}, ${pendingCoords.lng.toFixed(5)}`;
-    } else {
-      el.textContent = 'Coordenadas: — (activa modo agregar y haz clic en el mapa)';
+  function syncCoordInputs() {
+    const latEl = $('#siteLat');
+    const lngEl = $('#siteLng');
+    if (!latEl || !lngEl) return;
+    latEl.value = pendingCoords ? pendingCoords.lat.toFixed(5) : '';
+    lngEl.value = pendingCoords ? pendingCoords.lng.toFixed(5) : '';
+  }
+
+  function readCoordInputsFromForm() {
+    const lat = parseFloat($('#siteLat').value);
+    const lng = parseFloat($('#siteLng').value);
+    if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
+      pendingCoords = { lat, lng };
+      if (editingSiteId && markers[editingSiteId]) {
+        markers[editingSiteId].setLatLng([lat, lng]);
+      }
     }
   }
 
   async function saveSite(e) {
     e.preventDefault();
+    readCoordInputsFromForm();
 
     if (!pendingCoords) {
-      showToast('Selecciona una ubicación en el mapa primero');
+      showToast('Indica una ubicación: clic en el mapa, arrastra el pin, o escribe lat/lng');
       return;
     }
 

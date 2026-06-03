@@ -211,8 +211,18 @@
               <input type="text" id="siteUnits" placeholder="Ej. 120 apartamentos">
             </div>
 
-            <div class="form-group full-width coords-display" id="coordsDisplay">
-              Coordenadas: —
+            <div class="form-group">
+              <label for="siteLat">Latitud</label>
+              <input type="number" id="siteLat" step="any" placeholder="18.56000">
+            </div>
+
+            <div class="form-group">
+              <label for="siteLng">Longitud</label>
+              <input type="number" id="siteLng" step="any" placeholder="-68.37200">
+            </div>
+
+            <div class="form-group full-width">
+              <button type="button" class="btn btn-secondary btn-sm" id="btnRepositionMap">Ubicar con clic en el mapa</button>
             </div>
 
             <div class="form-subsection">Desarrollador</div>
